@@ -23,8 +23,7 @@ def _download(buildpack_dir, build_path, cache_dir):
 
 
 def _is_usage_metering_enabled():
-    if "MXUMS_LICENSESERVER_URL" in os.environ:
-        return True
+    return False
 
 
 def _get_project_id(file_path):
