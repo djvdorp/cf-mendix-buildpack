@@ -468,11 +468,13 @@ cf set-env <YOUR_APP> MAX_METASPACE_SIZE 512M
 
 ### Java Garbage Collector
 
-The Java garbage collector is configured automatically based on best practices. You can tweak this to your needs by using another environment variable, the accepted values are Serial or G1.
+The Java garbage collector is configured automatically based on best practices. You can tweak this to your needs by using another environment variable, the accepted values are Serial, G1, or ZGC.
 
 ```shell
 cf set-env <YOUR_APP> JVM_GARBAGE_COLLECTOR Serial
 ```
+
+**Note:** ZGC (Z Garbage Collector) is available for Java 11+ and is recommended for applications with large heaps and low-latency requirements.
 
 ### Java Virtual Machine (JVM) Settings
 
