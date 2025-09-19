@@ -14,7 +14,7 @@ BASE_PATH = os.getcwd()
 
 JAVA_VERSION_OVERRIDE_KEY = "JAVA_VERSION"
 DEFAULT_GC_COLLECTOR = "Serial"
-SUPPORTED_GC_COLLECTORS = ["Serial", "G1"]
+SUPPORTED_GC_COLLECTORS = ["Serial", "G1", "ZGC"]
 
 def get_java_major_version(runtime_version, build_path=BASE_PATH):
     result = 8
@@ -341,7 +341,7 @@ def _set_jvm_memory(m2ee, vcap):
         )
 
 
-def _set_garbage_collector(m2ee, vcap_data):
+def _set_garbage_collector(m2ee, vcap_data, runtime_version=None):
     limit = get_memory_limit(vcap_data)
 
     jvm_garbage_collector = DEFAULT_GC_COLLECTOR
@@ -360,7 +360,16 @@ def _set_garbage_collector(m2ee, vcap_data):
                             "collector type falling back to default [%s]",
                             env_jvm_garbage_collector, jvm_garbage_collector)
 
-    util.upsert_javaopts(m2ee, f"-XX:+Use{jvm_garbage_collector}GC")
+    # Handle ZGC special case
+    if jvm_garbage_collector == "ZGC":
+        if runtime_version is not None:
+            java_major_version = get_java_major_version(runtime_version)
+            if java_major_version < 15:
+                # For Java 11-14, ZGC requires experimental flag
+                util.upsert_javaopts(m2ee, "-XX:+UnlockExperimentalVMFeatures")
+        util.upsert_javaopts(m2ee, "-XX:+UseZGC")
+    else:
+        util.upsert_javaopts(m2ee, f"-XX:+Use{jvm_garbage_collector}GC")
 
     logging.info("JVM garbage collector is set to [%s]", jvm_garbage_collector)
 
@@ -383,6 +392,6 @@ def _set_application_name(m2ee, application_name):
 def update_config(m2ee, application_name, vcap_data, runtime_version):
     _set_application_name(m2ee, application_name)
     _set_jvm_memory(m2ee, vcap_data)
-    _set_garbage_collector(m2ee, vcap_data)
+    _set_garbage_collector(m2ee, vcap_data, runtime_version)
     _set_jvm_locale(m2ee, get_java_major_version(runtime_version))
     _set_user_provided_java_options(m2ee)
